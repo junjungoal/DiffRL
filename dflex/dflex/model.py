@@ -501,7 +501,7 @@ class Model:
 
                 for v in mesh.vertices:
 
-                    p = (v[0] * scale[0], v[1] * scale[1], v[2] * scale[2])
+                    p = ((v[0] * scale[0]).tolist(), (v[1] * scale[1]).tolist(), (v[2] * scale[2]).tolist())
 
                     add_contact(self.shape_body[i], -1, X_bs, p, 0.0, i)
 

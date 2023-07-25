@@ -32,7 +32,7 @@ class AntEnv(DFlexEnv):
     def __init__(self, render=False, device='cuda:0', num_envs=4096, seed=0, episode_length=1000, no_grad=True, stochastic_init=False, MM_caching_frequency = 1, early_termination = True):
         num_obs = 37
         num_act = 8
-    
+
         super(AntEnv, self).__init__(num_envs, num_obs, num_act, episode_length, MM_caching_frequency, seed, no_grad, render, device)
 
         self.stochastic_init = stochastic_init
@@ -161,7 +161,7 @@ class AntEnv(DFlexEnv):
         self.actions = actions.clone()
 
         self.state.joint_act.view(self.num_envs, -1)[:, 6:] = actions * self.action_strength
-        
+
         self.state = self.integrator.forward(self.model, self.state, self.sim_dt, self.sim_substeps, self.MM_caching_frequency)
         self.sim_time += self.sim_dt
 
@@ -188,7 +188,7 @@ class AntEnv(DFlexEnv):
         self.render()
 
         return self.obs_buf, self.rew_buf, self.reset_buf, self.extras
-    
+
     def reset(self, env_ids = None, force_reset = True):
         if env_ids is None:
             if force_reset == True:
@@ -223,7 +223,7 @@ class AntEnv(DFlexEnv):
             self.calculateObservations()
 
         return self.obs_buf
-    
+
     '''
     cut off the gradient from the current state to previous states
     '''
@@ -274,7 +274,7 @@ class AntEnv(DFlexEnv):
 
         to_target = self.targets + self.start_pos - torso_pos
         to_target[:, 1] = 0.0
-        
+
         target_dirs = tu.normalize(to_target)
         torso_quat = tu.quat_mul(torso_rot, self.inv_start_rot)
 

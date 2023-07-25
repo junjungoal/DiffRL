@@ -79,16 +79,16 @@ class CartPoleSwingUpEnv(DFlexEnv):
         self.num_joint_q = 2
         self.num_joint_qd = 2
 
-        asset_folder = os.path.join(os.path.dirname(__file__), 'assets')        
+        asset_folder = os.path.join(os.path.dirname(__file__), 'assets')
         for i in range(self.num_environments):
-            lu.urdf_load(self.builder, 
+            lu.urdf_load(self.builder,
                                 os.path.join(asset_folder, 'cartpole.urdf'),
-                                df.transform((0.0, 2.5, 0.0 + self.env_dist * i), df.quat_from_axis_angle((1.0, 0.0, 0.0), -math.pi*0.5)), 
+                                df.transform((0.0, 2.5, 0.0 + self.env_dist * i), df.quat_from_axis_angle((1.0, 0.0, 0.0), -math.pi*0.5)),
                                 floating=False,
                                 shape_kd=1e4,
                                 limit_kd=1.)
             self.builder.joint_q[i * self.num_joint_q + 1] = -math.pi
-        
+
         self.model = self.builder.finalize(self.device)
         self.model.ground = False
         self.model.gravity = torch.tensor((0.0, -9.81, 0.0), dtype = torch.float, device = self.device)
@@ -109,19 +109,19 @@ class CartPoleSwingUpEnv(DFlexEnv):
                 except:
                     print('USD save error')
                 self.num_frames -= 40
-    
+
     def step(self, actions):
         with df.ScopedTimer("simulate", active=False, detailed=False):
             actions = actions.view((self.num_envs, self.num_actions))
-            
+
             actions = torch.clip(actions, -1., 1.)
             self.actions = actions
-            
+
             self.state.joint_act.view(self.num_envs, -1)[:, 0:1] = actions * self.action_strength
-            
+
             self.state = self.integrator.forward(self.model, self.state, self.sim_dt, self.sim_substeps, self.MM_caching_frequency)
             self.sim_time += self.sim_dt
-            
+
         self.reset_buf = torch.zeros_like(self.reset_buf)
 
         self.progress_buf += 1
@@ -144,14 +144,14 @@ class CartPoleSwingUpEnv(DFlexEnv):
         with df.ScopedTimer("reset", active=False, detailed=False):
             if len(env_ids) > 0:
                 self.reset(env_ids)
-        
+
         with df.ScopedTimer("render", active=False, detailed=False):
             self.render()
 
         #self.extras = {'obs_before_reset': self.obs_buf_before_reset}
-        
+
         return self.obs_buf, self.rew_buf, self.reset_buf, self.extras
-    
+
     def reset(self, env_ids=None, force_reset=True):
         if env_ids is None:
             if force_reset == True:
@@ -172,7 +172,7 @@ class CartPoleSwingUpEnv(DFlexEnv):
                 self.state.joint_qd.view(self.num_envs, -1)[env_ids, :] = \
                     self.state.joint_qd.view(self.num_envs, -1)[env_ids, :] \
                     + 0.5 * (torch.rand(size=(len(env_ids), self.num_joint_qd), device=self.device) - 0.5)
-            
+
             self.progress_buf[env_ids] = 0
 
             self.calculateObservations()
@@ -185,7 +185,7 @@ class CartPoleSwingUpEnv(DFlexEnv):
     def clear_grad(self):
         with torch.no_grad(): # TODO: check with Miles
             current_joint_q = self.state.joint_q.clone()
-            current_joint_qd = self.state.joint_qd.clone() 
+            current_joint_qd = self.state.joint_qd.clone()
             current_joint_act = self.state.joint_act.clone()
             self.state = self.model.state()
             self.state.joint_q = current_joint_q
@@ -221,6 +221,6 @@ class CartPoleSwingUpEnv(DFlexEnv):
                     - torch.pow(x, 2.) * self.cart_position_penalty \
                     - torch.pow(xdot, 2.) * self.cart_velocity_penalty \
                     - torch.sum(self.actions ** 2, dim = -1) * self.cart_action_penalty
-        
+
         # reset agents
         self.reset_buf = torch.where(self.progress_buf > self.episode_length - 1, torch.ones_like(self.reset_buf), self.reset_buf)
