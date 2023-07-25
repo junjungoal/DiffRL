@@ -57,7 +57,7 @@ class Robot:
         for i in range(self.env_count):
             test_util.urdf_load(
                 builder, 
-                "assets/franka_description/robots/franka_panda.urdf", 
+                "assets/franka_panda/panda.urdf", 
                 df.transform((0.0, 0.0, 0.0), df.quat_from_axis_angle((1.0, 0.0, 0.0), -math.pi*0.5)), 
                 floating=False,
                 limit_ke=1.e+3,
@@ -287,7 +287,7 @@ class Robot:
 
 #---------
 
-robot = Robot(depth=1, mode='dflex', render=True, adapter='cpu')
+robot = Robot(depth=1, mode='dflex', render=True, adapter='cuda')
 
 #df.config.no_grad = True
 #df.config.check_grad = True

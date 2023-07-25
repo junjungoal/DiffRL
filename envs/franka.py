@@ -23,6 +23,7 @@ class FrankaEnv(DFlexEnv):
     def __init__(self, render=False, device='cuda:0', num_envs=64, seed=0, episode_length=1000, no_grad=True, stochastic_init=False, MM_caching_frequency=1, early_termination=False):
         num_obs = 37
         num_act = 7
+        self.steps = 0
         super(FrankaEnv, self).__init__(num_envs, num_obs, num_act, episode_length, MM_caching_frequency, seed, no_grad, render, device)
 
         self.stochastic_init = stochastic_init
@@ -64,7 +65,7 @@ class FrankaEnv(DFlexEnv):
         for i in range(self.num_environments):
             lu.urdf_load(self.builder,
                          os.path.join(asset_folder, 'franka_panda', 'panda.urdf'),
-                         df.transform((0.0, 2.5, 0.0 + self.env_dist * i), df.quat_from_axis_angle((1.0, 0.0, 0.0), -math.pi*0.5)),
+                         df.transform((0.0, 0.01, 0.0 + self.env_dist * i), df.quat_from_axis_angle((1.0, 0.0, 0.0), -math.pi*0.5)),
                          floating=False,
                          shape_kd=1e4,
                          limit_kd=1.)
@@ -73,7 +74,8 @@ class FrankaEnv(DFlexEnv):
         # finalize model
         self.model = self.builder.finalize(self.device)
         self.model.ground = self.ground
-        self.model.gravity = torch.tensor((0.0, -9.81, 0.0), dtype=torch.float32, device=self.device)
+        # self.model.gravity = torch.tensor((0.0, -9.81, 0.0), dtype=torch.float32, device=self.device)
+        self.model.gravity = torch.tensor((0.0, 0., 0.0), dtype=torch.float32, device=self.device)
 
         self.integrator = df.sim.SemiImplicitIntegrator()
 
@@ -91,7 +93,8 @@ class FrankaEnv(DFlexEnv):
 
             self.actions = actions
 
-            self.state.joint_act.view(self.num_envs, -1)[:, :self.num_joint_qd] = actions
+            # self.state.joint_act.view(self.num_envs, -1)[:, :self.num_joint_qd] = actions
+            self.state.joint_q.view(self.num_envs, -1)[:, 0] += 0.01
 
             self.state = self.integrator.forward(self.model, self.state, self.sim_dt, self.sim_substeps, self.MM_caching_frequency)
             self.sim_time += self.sim_dt
@@ -99,6 +102,7 @@ class FrankaEnv(DFlexEnv):
 
         self.progress_buf += 1
         self.num_frames += 1
+        self.steps += 1
 
         self.calculateObservations()
         self.calculateReward()
